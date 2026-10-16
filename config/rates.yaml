@@ -1,0 +1,10 @@
+currency: INR
+roles:
+  developer: 800
+  tester: 600
+  project_manager: 1000
+  designer: 700
+  devops: 900
+tooling_per_project: 40000
+cloud_per_month: 15000
+other_per_project: 30000
