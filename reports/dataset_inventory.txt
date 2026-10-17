@@ -1,0 +1,252 @@
+
+=== albrecht\albrecht.arff ===
+rows=24, cols=8
+columns/dtypes:
+Input          float64
+Output         float64
+Inquiry        float64
+File           float64
+FPAdj          float64
+RawFPcounts    float64
+AdjFP          float64
+Effort         float64
+missing per column:
+Input          0
+Output         0
+Inquiry        0
+File           0
+FPAdj          0
+RawFPcounts    0
+AdjFP          0
+Effort         0
+head:
+   Input  Output  Inquiry  File  FPAdj  RawFPcounts   AdjFP  Effort
+0   25.0   150.0     75.0  60.0    1.0       1750.0  1750.0   102.4
+1  193.0    98.0     70.0  36.0    1.0       1902.0  1902.0   105.2
+2   70.0    27.0      0.0  12.0    0.8        535.0   428.0    11.1
+
+=== cocomo811\cocomo811.arff ===
+rows=63, cols=17
+columns/dtypes:
+rely      float64
+data      float64
+cplx      float64
+time      float64
+stor      float64
+virt      float64
+turn      float64
+acap      float64
+aexp      float64
+pcap      float64
+vexp      float64
+lexp      float64
+modp      float64
+tool      float64
+sced      float64
+loc       float64
+actual    float64
+missing per column:
+rely      0
+data      0
+cplx      0
+time      0
+stor      0
+virt      0
+turn      0
+acap      0
+aexp      0
+pcap      0
+vexp      0
+lexp      0
+modp      0
+tool      0
+sced      0
+loc       0
+actual    0
+head:
+   rely  data  cplx  time  stor  virt  turn  acap  aexp  pcap  vexp  lexp  modp  tool  sced    loc  actual
+0  0.88  1.16  0.70   1.0  1.06  1.15  1.07  1.19  1.13  1.17   1.1  1.00  1.24  1.10  1.04  113.0  2040.0
+1  0.88  1.16  0.85   1.0  1.06  1.00  1.07  1.00  0.91  1.00   0.9  0.95  1.10  1.00  1.00  293.0  1600.0
+2  1.00  1.16  0.85   1.0  1.00  0.87  0.94  0.86  0.82  0.86   0.9  0.95  0.91  0.91  1.00  132.0   243.0
+
+=== desharnais\desharnais.arff ===
+rows=81, cols=12
+columns/dtypes:
+Project            float64
+TeamExp            float64
+ManagerExp         float64
+YearEnd            float64
+Length             float64
+Effort             float64
+Transactions       float64
+Entities           float64
+PointsNonAdjust    float64
+Adjustment         float64
+PointsAjust        float64
+Language               str
+missing per column:
+Project            0
+TeamExp            0
+ManagerExp         0
+YearEnd            0
+Length             0
+Effort             0
+Transactions       0
+Entities           0
+PointsNonAdjust    0
+Adjustment         0
+PointsAjust        0
+Language           0
+head:
+   Project  TeamExp  ManagerExp  YearEnd  Length  Effort  Transactions  Entities  PointsNonAdjust  Adjustment  PointsAjust Language
+0      1.0      1.0         4.0     85.0    12.0  5152.0         253.0      52.0            305.0        34.0        302.0        1
+1      2.0      0.0         0.0     86.0     4.0  5635.0         197.0     124.0            321.0        33.0        315.0        1
+2      3.0      4.0         4.0     85.0     1.0   805.0          40.0      60.0            100.0        18.0         83.0        1
+
+=== kemerer\kemerer.arff ===
+rows=15, cols=8
+columns/dtypes:
+ID          float64
+Language    float64
+Hardware    float64
+Duration    float64
+KSLOC       float64
+AdjFP       float64
+RAWFP       float64
+EffortMM    float64
+missing per column:
+ID          0
+Language    0
+Hardware    0
+Duration    0
+KSLOC       0
+AdjFP       0
+RAWFP       0
+EffortMM    0
+head:
+    ID  Language  Hardware  Duration  KSLOC   AdjFP   RAWFP  EffortMM
+0  1.0       1.0       1.0      17.0  253.6  1217.1  1010.0    287.00
+1  2.0       1.0       2.0       7.0   40.5   507.3   457.0     82.50
+2  3.0       1.0       3.0      15.0  450.0  2306.8  2284.0   1107.31
+
+=== maxwell\maxwell.arff ===
+rows=62, cols=27
+columns/dtypes:
+Syear       float64
+App         float64
+Har         float64
+Dba         float64
+Ifc         float64
+Source      float64
+Telonuse    float64
+Nlan        float64
+T01         float64
+T02         float64
+T03         float64
+T04         float64
+T05         float64
+T06         float64
+T07         float64
+T08         float64
+T09         float64
+T10         float64
+T11         float64
+T12         float64
+T13         float64
+T14         float64
+T15         float64
+Duration    float64
+Size        float64
+Time        float64
+Effort      float64
+missing per column:
+Syear       0
+App         0
+Har         0
+Dba         0
+Ifc         0
+Source      0
+Telonuse    0
+Nlan        0
+T01         0
+T02         0
+T03         0
+T04         0
+T05         0
+T06         0
+T07         0
+T08         0
+T09         0
+T10         0
+T11         0
+T12         0
+T13         0
+T14         0
+T15         0
+Duration    0
+Size        0
+Time        0
+Effort      0
+head:
+   Syear  App  Har  Dba  Ifc  Source  Telonuse  Nlan  T01  T02  T03  T04  T05  T06  T07  T08  T09  T10  T11  T12  T13  T14  T15  Duration   Size  Time  Effort
+0   92.0  2.0  2.0  1.0  2.0     2.0       0.0   3.0  4.0  3.0  5.0  3.0  3.0  3.0  4.0  5.0  4.0  5.0  4.0  4.0  4.0  4.0  5.0      16.0  647.0   8.0  7871.0
+1   93.0  2.0  2.0  1.0  2.0     2.0       0.0   3.0  2.0  3.0  3.0  3.0  3.0  3.0  2.0  2.0  4.0  3.0  4.0  4.0  4.0  4.0  4.0       5.0  130.0   9.0   845.0
+2   90.0  1.0  2.0  1.0  2.0     2.0       0.0   2.0  3.0  3.0  2.0  3.0  3.0  4.0  2.0  3.0  4.0  5.0  4.0  3.0  2.0  3.0  3.0       8.0  254.0   6.0  2330.0
+
+=== nasa93\nasa93.arff ===
+rows=93, cols=24
+columns/dtypes:
+recordnumber     float64
+projectname          str
+cat2                 str
+forg                 str
+center               str
+year             float64
+mode                 str
+rely                 str
+data                 str
+cplx                 str
+time                 str
+stor                 str
+virt                 str
+turn                 str
+acap                 str
+aexp                 str
+pcap                 str
+vexp                 str
+lexp                 str
+modp                 str
+tool                 str
+sced                 str
+equivphyskloc    float64
+act_effort       float64
+missing per column:
+recordnumber     0
+projectname      0
+cat2             0
+forg             0
+center           0
+year             0
+mode             0
+rely             0
+data             0
+cplx             0
+time             0
+stor             0
+virt             0
+turn             0
+acap             0
+aexp             0
+pcap             0
+vexp             0
+lexp             0
+modp             0
+tool             0
+sced             0
+equivphyskloc    0
+act_effort       0
+head:
+   recordnumber projectname                cat2 forg center    year          mode rely data cplx time stor virt turn acap aexp pcap vexp lexp modp tool sced  equivphyskloc  act_effort
+0           1.0          de  avionicsmonitoring    g      2  1979.0  semidetached    h    l    h    n    n    l    l    n    n    n    n    h    h    n    l           25.9       117.6
+1           2.0          de  avionicsmonitoring    g      2  1979.0  semidetached    h    l    h    n    n    l    l    n    n    n    n    h    h    n    l           24.6       117.6
+2           3.0          de  avionicsmonitoring    g      2  1979.0  semidetached    h    l    h    n    n    l    l    n    n    n    n    h    h    n    l            7.7        31.2
