@@ -1,0 +1,5 @@
+family,model,MAE,MMRE,MdMRE,PRED25,bias
+fp,median,8138.81,1.16,0.61,14.61,-5674.61
+fp,loglog_size,5855.62,0.67,0.43,28.65,-2441.95
+kloc,median,90203.33,3.23,0.89,7.69,-70558.69
+kloc,loglog_size,59088.29,0.82,0.48,28.85,-30552.96
