@@ -14,6 +14,7 @@ DOMAIN_GROUP = {
     "maxwell": "business_it",
     "nasa93": "aerospace_engineering",
     "cocomo811": "mixed_engineering",
+    "china": "business_it",
 }
 
 # Standard COCOMO81 effort multiplier values

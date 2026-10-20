@@ -1,0 +1,4 @@
+model,MAE_pm,MMRE,MdMRE,PRED25,bias_pm
+ridge,587.28,0.59,0.29,42.31,192.87
+random_forest,365.86,0.69,0.36,33.97,-187.91
+gradient_boosting,448.84,0.66,0.37,35.26,-107.62

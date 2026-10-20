@@ -11,6 +11,7 @@ To rebuild it, download each file from the URL below into the folder shown.
 | Albrecht | data/raw/albrecht/ | <https://zenodo.org/records/268467> | <licence> | 2026-10-17 | 24 |
 | Kemerer | data/raw/kemerer/ | <https://zenodo.org/records/268464> | <licence> | 2026-10-17 | 15 |
 | Maxwell | data/raw/maxwell/ | <https://zenodo.org/records/268461> | <licence> | 2026-10-17 | 62 |
+| China | data/raw/china/ | https://zenodo.org/records/268446 | <licence> | 2026-10-20 | 499 |
 
 ## Notes
 - Source type for each (Zenodo, Kaggle, other mirror) and the uploader if Kaggle.

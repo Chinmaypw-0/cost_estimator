@@ -1,0 +1,6 @@
+experiment,model,MAE_h,MMRE,MdMRE,PRED25,bias_h
+A_all_fp_size_only,loglog_size,3702.72,1.09,0.56,19.65,-1823.24
+A_all_fp_size_only,gradient_boosting,3819.15,1.15,0.57,20.24,-1937.24
+B_china,loglog_size,2322.79,1.05,0.57,21.04,-1207.66
+B_china,random_forest_rich,2515.96,1.11,0.58,22.44,-1110.13
+B_china,gradient_boosting_rich,2560.63,1.13,0.59,21.44,-1049.38

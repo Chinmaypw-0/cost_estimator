@@ -51,8 +51,12 @@ def nasa93():
     df = _load("nasa93")
     return _frame("nasa93", df["equivphyskloc"], "kloc", df["act_effort"] * HOURS_PER_PM)
 
+def china():
+    df = _load("china")
+    return _frame("china", df["AFP"], "fp", df["Effort"], duration=df["Duration"])
+
 def build_unified():
-    out = pd.concat([f() for f in (albrecht, cocomo811, desharnais,
+    out = pd.concat([f() for f in (albrecht, cocomo811, desharnais,china,
                                    kemerer, maxwell, nasa93)], ignore_index=True)
     out = out[UNIFIED_COLS]
     bad = out["size_value"].isna() | out["effort_hours"].isna() \
