@@ -6,9 +6,14 @@ import pandas as pd
 import streamlit as st
 from src.analogy.retrieve import similar_projects
 from src.costing.cost_engine import cost_estimate
-from src.data.schema import MULTIPLIERS
+from src.llm.decompose import decompose
 from src.uncertainty.monte_carlo import simulate
 from src.uncertainty.scenarios import run_scenarios
+
+DOMAINS = ["business_software", "web_mobile", "data_ai",
+           "embedded_iot", "engineering_scientific", "other"]
+UNIT_FOR = {"embedded_iot": "kloc", "engineering_scientific": "kloc"}   # others use fp
+CONF_THRESHOLD = 0.7
 
 st.set_page_config(page_title="AI Cost Estimator", layout="wide")
 st.title("AI-Based Software Project Cost Estimator")
@@ -16,28 +21,9 @@ st.title("AI-Based Software Project Cost Estimator")
 def inr(x):
     return f"₹{x:,.0f}"
 
-with st.sidebar:
-    st.header("Project inputs")
-    label = st.radio("Size is measured in", ["Function points", "KLOC (thousand lines of code)"])
-    unit = "fp" if label.startswith("Function") else "kloc"
-    size = st.number_input("Project size", min_value=1.0,
-                           value=300.0 if unit == "fp" else 50.0,
-                           step=10.0, key=f"size_{unit}")
-    team = st.slider("Team size", 1, 20, 4)
-    budget = st.number_input("Budget (₹)", min_value=0, value=2500000, step=100000)
-    mult = {}
-    if unit == "kloc":
-        with st.expander("COCOMO factors (optional)"):
-            for m in ["rely", "cplx", "acap"]:
-                opts = list(MULTIPLIERS[m])
-                choice = st.selectbox(m, opts, index=opts.index("n"))
-                mult[m] = MULTIPLIERS[m][choice]
-    go = st.button("Estimate", type="primary")
-
-if go:
-    est = cost_estimate(size, unit, team_size=team, multipliers=mult or None)
-    sim = simulate(size, unit, team_size=team, multipliers=mult or None,
-                   budget=budget or None)
+def show_results(size, unit, team, budget):
+    est = cost_estimate(size, unit, team_size=team)
+    sim = simulate(size, unit, team_size=team, budget=budget or None)
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Estimated effort (hours)", f"{est['effort_hours']:,}")
@@ -58,16 +44,60 @@ if go:
         st.dataframe(pd.DataFrame(est["roles"]).T)
     with right:
         st.subheader("Cost by category")
-        st.bar_chart(pd.Series({"Personnel": est["personnel_cost"],
-                                "Cloud": est["cloud_cost"],
-                                "Tooling": est["tooling_cost"],
-                                "Other": est["other_cost"]}))
+        st.bar_chart(pd.Series({"Personnel": est["personnel_cost"], "Cloud": est["cloud_cost"],
+                                "Tooling": est["tooling_cost"], "Other": est["other_cost"]}))
 
     st.subheader("What-if scenarios")
     st.dataframe(run_scenarios(size, unit, team, budget=budget or None))
-    st.caption("Scenarios use nominal COCOMO factors.")
-
     st.subheader("Similar past projects")
     st.dataframe(similar_projects(size, unit))
+
+st.header("1. Describe your project")
+desc = st.text_area("Describe the project in plain English", height=120,
+                    placeholder="e.g. An inventory web app with login, stock alerts and sales reports")
+
+if st.button("Analyze description"):
+    if not desc.strip():
+        st.warning("Please type a description first.")
+    else:
+        with st.spinner("Reading your description..."):
+            try:
+                st.session_state["bd"] = decompose(desc)
+                st.session_state["aid"] = st.session_state.get("aid", 0) + 1
+            except Exception as e:
+                st.error(f"Could not analyze the description: {e}")
+
+bd = st.session_state.get("bd")
+if bd:
+    aid = st.session_state["aid"]
+    st.header("2. Review and edit")
+
+    if bd.domain_confidence < CONF_THRESHOLD or bd.domain == "other":
+        st.warning(f"I'm not sure about the project type (confidence {bd.domain_confidence:.0%}). "
+                   "Please confirm it below. 'other' uses the general model.")
+    else:
+        st.success(f"Detected: {bd.domain} (confidence {bd.domain_confidence:.0%}). You can change it.")
+
+    col1, col2, col3 = st.columns(3)
+    domain = col1.selectbox("Project type", DOMAINS, index=DOMAINS.index(bd.domain), key=f"d{aid}")
+    unit = UNIT_FOR.get(domain, "fp")
+    if unit != bd.size_unit:
+        st.warning(f"The size was estimated in {bd.size_unit}, but this type uses {unit}. "
+                   "Please enter a new size.")
+        default_size = 300.0 if unit == "fp" else 50.0
+    else:
+        default_size = float(bd.size_value)
+    size = col2.number_input(f"Size ({'function points' if unit == 'fp' else 'KLOC'})",
+                             min_value=1.0, value=default_size, step=10.0, key=f"s{aid}{unit}")
+    team = col3.slider("Team size", 1, 20, int(bd.suggested_team_size), key=f"t{aid}")
+    st.caption(f"Size reasoning: {bd.size_reasoning}")
+    budget = st.number_input("Budget (₹)", min_value=0, value=2500000, step=100000)
+
+    with st.expander("Task breakdown (for display; cost uses a fixed role split)"):
+        st.dataframe(pd.DataFrame([t.model_dump() for t in bd.tasks]))
+
+    if st.button("Estimate", type="primary"):
+        st.header("3. Results")
+        show_results(size, unit, team, budget)
 else:
-    st.info("Enter the project details on the left and click Estimate.")
+    st.info("Describe your project above and click Analyze description.")

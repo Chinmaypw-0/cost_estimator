@@ -17,3 +17,4 @@ requests
 openpyxl
 pytest
 jupyter
+google-genai
