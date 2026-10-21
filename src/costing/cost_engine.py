@@ -6,6 +6,12 @@ from src.data.schema import MULTIPLIERS, HOURS_PER_PM
 ROLE_SPLIT = {"developer": 0.55, "tester": 0.20, "project_manager": 0.10,
               "designer": 0.10, "devops": 0.05}
 
+BASE_TEAM = 3                # team size with no extra overhead
+OVERHEAD_PER_EXTRA = 0.05    # +5% effort per person beyond the base team
+
+def team_overhead(team_size):
+    return 1 + OVERHEAD_PER_EXTRA * max(0, team_size - BASE_TEAM)
+
 def load_rates(path="config/rates.yaml"):
     with open(path) as f:
         return yaml.safe_load(f)
@@ -23,7 +29,7 @@ def estimate_effort_hours(size, unit, multipliers=None):
 
 def cost_estimate(size, unit, team_size=5, multipliers=None, rates=None):
     rates = rates or load_rates()
-    hours = estimate_effort_hours(size, unit, multipliers)
+    hours = estimate_effort_hours(size, unit, multipliers) * team_overhead(team_size)
     months = hours / (team_size * HOURS_PER_PM)
     roles = {}
     for role, share in ROLE_SPLIT.items():

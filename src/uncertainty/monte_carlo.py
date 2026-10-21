@@ -1,12 +1,12 @@
 import json
 import numpy as np
-from src.costing.cost_engine import ROLE_SPLIT, estimate_effort_hours, load_rates
+from src.costing.cost_engine import ROLE_SPLIT, estimate_effort_hours, load_rates, team_overhead
 from src.data.schema import HOURS_PER_PM
 
 def simulate(size, unit, team_size=5, multipliers=None, n=10000, budget=None, seed=0):
     rng = np.random.default_rng(seed)
     rates = load_rates()
-    base_hours = estimate_effort_hours(size, unit, multipliers)
+    base_hours = estimate_effort_hours(size, unit, multipliers) * team_overhead(team_size)
     resid = np.array(json.load(open("models/residuals.json"))["kloc" if unit == "kloc" else "fp"])
 
     hours = base_hours * np.exp(rng.choice(resid, n))          # effort error from the models
