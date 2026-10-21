@@ -9,6 +9,7 @@ from src.costing.cost_engine import cost_estimate
 from src.llm.decompose import decompose
 from src.uncertainty.monte_carlo import simulate
 from src.uncertainty.scenarios import run_scenarios
+from src.export import build_excel
 
 DOMAINS = ["business_software", "web_mobile", "data_ai",
            "embedded_iot", "engineering_scientific", "other"]
@@ -47,10 +48,18 @@ def show_results(size, unit, team, budget):
         st.bar_chart(pd.Series({"Personnel": est["personnel_cost"], "Cloud": est["cloud_cost"],
                                 "Tooling": est["tooling_cost"], "Other": est["other_cost"]}))
 
+    scen = run_scenarios(size, unit, team, budget=budget or None)
+    sim_proj = similar_projects(size, unit)
     st.subheader("What-if scenarios")
-    st.dataframe(run_scenarios(size, unit, team, budget=budget or None))
+    st.dataframe(scen)
     st.subheader("Similar past projects")
-    st.dataframe(similar_projects(size, unit))
+    st.dataframe(sim_proj)
+
+    inputs = {"size": size, "size_unit": unit, "team_size": team, "budget": budget}
+    st.download_button("Download estimate (Excel)",
+                       build_excel(est, sim, scen, sim_proj, inputs),
+                       file_name="cost_estimate.xlsx",
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 st.header("1. Describe your project")
 desc = st.text_area("Describe the project in plain English", height=120,
@@ -64,6 +73,7 @@ if st.button("Analyze description"):
             try:
                 st.session_state["bd"] = decompose(desc)
                 st.session_state["aid"] = st.session_state.get("aid", 0) + 1
+                st.session_state["show"] = False
             except Exception as e:
                 st.error(f"Could not analyze the description: {e}")
 
@@ -97,6 +107,8 @@ if bd:
         st.dataframe(pd.DataFrame([t.model_dump() for t in bd.tasks]))
 
     if st.button("Estimate", type="primary"):
+        st.session_state["show"] = True
+    if st.session_state.get("show"):
         st.header("3. Results")
         show_results(size, unit, team, budget)
 else:
