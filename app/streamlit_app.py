@@ -10,6 +10,7 @@ from src.llm.decompose import decompose
 from src.uncertainty.monte_carlo import simulate
 from src.uncertainty.scenarios import run_scenarios
 from src.export import build_excel, task_table, jira_csv, msproject_csv
+from src.db import save_estimate, list_estimates, set_actual, kpis
 
 DOMAINS = ["business_software", "web_mobile", "data_ai",
            "embedded_iot", "engineering_scientific", "other"]
@@ -115,8 +116,28 @@ if bd:
 
     if st.button("Estimate", type="primary"):
         st.session_state["show"] = True
+        _est = cost_estimate(size, unit, team_size=team)
+        _sim = simulate(size, unit, team_size=team, budget=budget or None)
+        save_estimate(desc, domain, size, unit, team, budget, _est, _sim)
     if st.session_state.get("show"):
         st.header("3. Results")
         show_results(size, unit, team, budget, bd.tasks)
 else:
     st.info("Describe your project above and click Analyze description.")
+st.divider()
+with st.expander("Saved estimates"):
+    hist = list_estimates()
+    st.dataframe(hist)
+    if not hist.empty:
+        st.markdown("**Record the real cost of a finished project**")
+        c1, c2 = st.columns(2)
+        pick = c1.selectbox("Estimate id", hist["id"].tolist())
+        actual = c2.number_input("Actual total cost (₹)", min_value=0, step=10000)
+        if st.button("Save actual cost"):
+            set_actual(int(pick), float(actual))
+            st.rerun()
+    k = kpis()
+    if k:
+        st.markdown("**Accuracy so far**")
+        st.table(pd.DataFrame([(a, str(b)) for a, b in k.items()],
+                              columns=["KPI", "value"]))

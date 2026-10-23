@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
+import time
+from google.genai import errors
 
 load_dotenv()
 
@@ -38,20 +40,26 @@ Reference sizes: a small CRUD web app is about 100-200 function points, a medium
 business system about 300-600, a large one 1000 or more. A small embedded firmware
 project is about 5-20 KLOC, a large one 100 KLOC or more. Be realistic, not generous."""
 
-def decompose(description, tries=2):
+def decompose(description, tries=4):
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
     last = None
-    for _ in range(tries):
-        r = client.models.generate_content(
-            model=model,
-            contents=PROMPT + "\n\nProject description:\n" + description,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json", temperature=0),
-        )
+    for attempt in range(tries):
         try:
+            r = client.models.generate_content(
+                model=model,
+                contents=PROMPT + "\n\nProject description:\n" + description,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json", temperature=0),
+            )
             return Breakdown.model_validate_json(r.text)
-        except Exception as e:      # bad or incomplete JSON: try once more
+        except errors.ClientError:
+            raise                          # quota, bad key, wrong model: show it now
+        except errors.ServerError as e:    # Google is busy (503): wait, then retry
+            last = e
+            if attempt < tries - 1:
+                time.sleep(3 * 2 ** attempt)
+        except Exception as e:             # malformed JSON: try again right away
             last = e
     raise last
 
