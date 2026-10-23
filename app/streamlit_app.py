@@ -5,11 +5,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import pandas as pd
 import streamlit as st
 from src.analogy.retrieve import similar_projects
-from src.costing.cost_engine import cost_estimate
+from src.costing.cost_engine import cost_estimate, load_rates
 from src.llm.decompose import decompose
 from src.uncertainty.monte_carlo import simulate
 from src.uncertainty.scenarios import run_scenarios
-from src.export import build_excel
+from src.export import build_excel, task_table, jira_csv, msproject_csv
 
 DOMAINS = ["business_software", "web_mobile", "data_ai",
            "embedded_iot", "engineering_scientific", "other"]
@@ -22,7 +22,7 @@ st.title("AI-Based Software Project Cost Estimator")
 def inr(x):
     return f"₹{x:,.0f}"
 
-def show_results(size, unit, team, budget):
+def show_results(size, unit, team, budget,tasks):
     est = cost_estimate(size, unit, team_size=team)
     sim = simulate(size, unit, team_size=team, budget=budget or None)
 
@@ -60,7 +60,14 @@ def show_results(size, unit, team, budget):
                        build_excel(est, sim, scen, sim_proj, inputs),
                        file_name="cost_estimate.xlsx",
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
+    tbl = task_table(tasks, est["effort_hours"], load_rates())
+    st.subheader("Export tasks")
+    st.dataframe(tbl)
+    b1, b2 = st.columns(2)
+    b1.download_button("Download for Jira (CSV)", jira_csv(tbl),
+                       file_name="jira_tasks.csv", mime="text/csv")
+    b2.download_button("Download for MS Project (CSV)", msproject_csv(tbl),
+                       file_name="msproject_tasks.csv", mime="text/csv")
 st.header("1. Describe your project")
 desc = st.text_area("Describe the project in plain English", height=120,
                     placeholder="e.g. An inventory web app with login, stock alerts and sales reports")
@@ -110,6 +117,6 @@ if bd:
         st.session_state["show"] = True
     if st.session_state.get("show"):
         st.header("3. Results")
-        show_results(size, unit, team, budget)
+        show_results(size, unit, team, budget, bd.tasks)
 else:
     st.info("Describe your project above and click Analyze description.")
