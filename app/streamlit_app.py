@@ -17,8 +17,20 @@ DOMAINS = ["business_software", "web_mobile", "data_ai",
 UNIT_FOR = {"embedded_iot": "kloc", "engineering_scientific": "kloc"}   # others use fp
 CONF_THRESHOLD = 0.7
 
-st.set_page_config(page_title="AI Cost Estimator", layout="wide")
+st.set_page_config(page_title="AI Cost Estimator", page_icon="📊", layout="wide")
+st.markdown("""
+<style>
+.block-container {padding-top: 2rem; max-width: 1200px;}
+[data-testid="stMetric"] {background: white; border: 1px solid #E2E8F0;
+    border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,.05);}
+h1 {font-weight: 700; letter-spacing: -0.02em;}
+footer {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("AI-Based Software Project Cost Estimator")
+st.caption("Describe a project in plain English, or upload a document, and get effort, "
+           "cost and a confidence range, with scenarios and exports.")
 
 def inr(x):
     return f"₹{x:,.0f}"
@@ -72,14 +84,21 @@ def show_results(size, unit, team, budget,tasks):
 st.header("1. Describe your project")
 desc = st.text_area("Describe the project in plain English", height=120,
                     placeholder="e.g. An inventory web app with login, stock alerts and sales reports")
+upload = st.file_uploader(
+    "Or upload a requirements document, PDF or screenshot "
+    "(it is sent to Google's Gemini, so avoid confidential files)",
+    type=["pdf", "png", "jpg", "jpeg", "docx", "txt", "md"])
 
 if st.button("Analyze description"):
-    if not desc.strip():
-        st.warning("Please type a description first.")
+    if not desc.strip() and upload is None:
+        st.warning("Please type a description or upload a file first.")
+    elif upload is not None and upload.size > 10 * 1024 * 1024:
+        st.error("That file is over 10 MB. Please upload a smaller one.")
     else:
-        with st.spinner("Reading your description..."):
+        with st.spinner("Reading your project..."):
             try:
-                st.session_state["bd"] = decompose(desc)
+                doc = (upload.name, upload.getvalue()) if upload else None
+                st.session_state["bd"] = decompose(desc, doc)
                 st.session_state["aid"] = st.session_state.get("aid", 0) + 1
                 st.session_state["show"] = False
             except Exception as e:

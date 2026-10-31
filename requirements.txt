@@ -18,3 +18,4 @@ openpyxl
 pytest
 jupyter
 google-genai
+python-docx

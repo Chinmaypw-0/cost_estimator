@@ -40,7 +40,21 @@ Reference sizes: a small CRUD web app is about 100-200 function points, a medium
 business system about 300-600, a large one 1000 or more. A small embedded firmware
 project is about 5-20 KLOC, a large one 100 KLOC or more. Be realistic, not generous."""
 
-def decompose(description, tries=4):
+def _doc_part(name, data):
+    ext = name.lower().rsplit(".", 1)[-1]
+    mime = {"pdf": "application/pdf", "png": "image/png",
+            "jpg": "image/jpeg", "jpeg": "image/jpeg"}.get(ext)
+    if mime:
+        return types.Part.from_bytes(data=data, mime_type=mime)
+    if ext == "docx":
+        import io
+        import docx
+        text = "\n".join(p.text for p in docx.Document(io.BytesIO(data)).paragraphs)
+    else:                                   # txt, md
+        text = data.decode("utf-8", errors="ignore")
+    return "Attached document text:\n" + text[:30000]
+
+def decompose(description, doc=None, tries=4):
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
     last = None
@@ -48,7 +62,9 @@ def decompose(description, tries=4):
         try:
             r = client.models.generate_content(
                 model=model,
-                contents=PROMPT + "\n\nProject description:\n" + description,
+                contents=[PROMPT + "\n\nProject description:\n"
+                    +(description.strip() or "(none, see the attached document)")]
+                    +([_doc_part(*doc)] if doc else []),
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json", temperature=0),
             )
