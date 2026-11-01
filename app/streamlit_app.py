@@ -199,8 +199,37 @@ with tab_what:
     if not res:
         st.info(NEED)
     else:
-        st.subheader("What-if scenarios")
-        st.dataframe(get_scen(res["size"], res["unit"], res["team"], res["budget"]))
+        st.subheader("Try your own change")
+        key = f"{res['team']}_{res['size']}"
+        w1, w2 = st.columns(2)
+        new_team = w1.slider("Team size", 1, 20, int(res["team"]), key=f"w_team_{key}")
+        scope = w2.slider("Change in project scope (%)", -50, 100, 0, step=5, key=f"w_scope_{key}")
+        new_size = max(1.0, res["size"] * (1 + scope / 100))
+
+        base_est = get_est(res["size"], res["unit"], res["team"])
+        base_sim = get_sim(res["size"], res["unit"], res["team"], res["budget"])
+        new_est = get_est(new_size, res["unit"], new_team)
+        new_sim = get_sim(new_size, res["unit"], new_team, res["budget"])
+
+        def money_delta(new, old):
+            d = new - old
+            return f"{'+' if d >= 0 else '-'}{inr(abs(d))}"
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Duration (months)", new_est["duration_months"],
+                  delta=f"{new_est['duration_months'] - base_est['duration_months']:+.1f}",
+                  delta_color="inverse")
+        m2.metric("Low (best case)", inr(new_sim["P10"]),
+                  delta=money_delta(new_sim["P10"], base_sim["P10"]), delta_color="inverse")
+        m3.metric("Mid (most likely)", inr(new_sim["P50"]),
+                  delta=money_delta(new_sim["P50"], base_sim["P50"]), delta_color="inverse")
+        m4.metric("High (worst case)", inr(new_sim["P90"]),
+                  delta=money_delta(new_sim["P90"], base_sim["P90"]), delta_color="inverse")
+        st.caption("The small arrows compare with your last estimate. Green means cheaper or faster. "
+                   "Only the cost engine and simulation run again, so Gemini is not called.")
+
+        with st.expander("Preset scenarios (table)"):
+            st.dataframe(get_scen(res["size"], res["unit"], res["team"], res["budget"]))
 
 #Similar projects------
 with tab_sim:
