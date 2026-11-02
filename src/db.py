@@ -53,7 +53,14 @@ def set_actual(estimate_id, actual_cost):
     finally:
         con.close()
 
-
+def delete_estimate(estimate_id):
+    con = _connect()
+    try:
+        con.execute("DELETE FROM estimates WHERE id=?", (estimate_id,))
+        con.commit()
+    finally:
+        con.close()
+        
 def kpis():
     df = list_estimates()
     df["actual_cost"] = pd.to_numeric(df["actual_cost"], errors="coerce")
@@ -63,11 +70,14 @@ def kpis():
         return None
     err = (d["best_guess"] - d["actual_cost"]) / d["actual_cost"]
     inside = (d["actual_cost"] >= d["p10"]) & (d["actual_cost"] <= d["p90"])
+    b = d[d["budget"] > 0]
+    within = (round(float((b["actual_cost"] <= b["budget"]).mean() * 100), 1)
+              if not b.empty else "n/a")
     return {
         "projects with actual cost": len(d),
         "MMRE (cost error)": round(float(err.abs().mean()), 2),
         "PRED(25) %": round(float((err.abs() <= 0.25).mean() * 100), 1),
-        "delivered within budget %": round(float((d["actual_cost"] <= d["budget"]).mean() * 100), 1),
+        "delivered within budget %": within,
         "actual inside P10-P90 %": round(float(inside.mean() * 100), 1),
         "bias % (+ = overestimate)": round(float(err.mean() * 100), 1),
     }

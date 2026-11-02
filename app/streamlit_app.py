@@ -1,8 +1,12 @@
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.db import save_estimate, list_estimates, set_actual, kpis, delete_estimate
 
 import pandas as pd
+import hashlib
+import os
+import numpy as np
 import streamlit as st
 from src.analogy.retrieve import similar_projects
 from src.costing.cost_engine import cost_estimate, load_rates
@@ -10,7 +14,7 @@ from src.llm.decompose import decompose
 from src.uncertainty.monte_carlo import simulate
 from src.uncertainty.scenarios import run_scenarios
 from src.export import build_excel, task_table, jira_csv, msproject_csv
-from src.db import save_estimate, list_estimates, set_actual, kpis
+from src.db import save_estimate, list_estimates, set_actual, kpis, delete_estimate
 
 DOMAINS = ["business_software", "web_mobile", "data_ai",
            "embedded_iot", "engineering_scientific", "other"]
@@ -43,6 +47,23 @@ def inr(x):
     if x >= 1e5:
         return f"₹{x / 1e5:.1f} L"
     return f"₹{x:,.0f}"
+
+PROMPT_VERSION = "1"   # change this number whenever you edit the prompt in decompose.py
+
+
+def _key(desc, doc):
+    h = hashlib.sha256()
+    h.update(" ".join(desc.split()).lower().encode())
+    if doc:
+        h.update(doc[0].encode())
+        h.update(doc[1])
+    h.update((os.getenv("GEMINI_MODEL", "") + PROMPT_VERSION).encode())
+    return h.hexdigest()
+
+
+@st.cache_data(persist="disk", show_spinner=False)
+def cached_decompose(key, _desc, _doc):
+    return decompose(_desc, _doc)
 
 def range_bar(lo, mid, hi, budget=0):
     top = max(hi, budget) * 1.05
@@ -108,7 +129,7 @@ with tab_new:
             with st.spinner("Reading your project..."):
                 try:
                     doc = (upload.name, upload.getvalue()) if upload else None
-                    st.session_state["bd"] = decompose(desc, doc)
+                    st.session_state["bd"] = cached_decompose(_key(desc, doc), desc, doc)
                     st.session_state["aid"] = st.session_state.get("aid", 0) + 1
                     st.session_state["res"] = None
                 except Exception as e:
@@ -167,20 +188,22 @@ with tab_new:
             c1, c2, c3 = st.columns(3)
             c1.metric("Estimated effort (hours)", f"{est['effort_hours']:,}")
             c2.metric("Duration (months)", est["duration_months"])
-            c3.metric("Best-guess total cost", inr(est["total_cost"]))
+            c3.metric("Most likely total cost", inr(sim["P50"]))
 
             st.subheader("Likely cost range")
             range_bar(sim["P10"], sim["P50"], sim["P90"], res["budget"])
             st.caption("About 8 out of 10 times the final cost lands inside the shaded range. "
                        "The solid mark is the most likely value."
                        + (" The red line is your budget." if res["budget"] else ""))
-            r1, r2, r3, r4 = st.columns(4)
+            r1, r2, r3 = st.columns(3)
             r1.metric("Low (best case)", inr(sim["P10"]))
-            r2.metric("Mid (most likely)", inr(sim["P50"]))
-            r3.metric("High (worst case)", inr(sim["P90"]))
+            r2.metric("High (worst case)", inr(sim["P90"]))
             if "prob_over_budget_%" in sim:
-                r4.metric("Chance of going over budget", f"{sim['prob_over_budget_%']}%")
+                r3.metric("Chance of going over budget", f"{sim['prob_over_budget_%']}%")
 
+            st.caption(f"The role and category breakdown below uses the model's single estimate "
+                       f"({inr(est['total_cost'])}). The most likely total above also includes the "
+                       "simulated uncertainty, so the two differ slightly.")
             left, right = st.columns(2)
             with left:
                 st.subheader("Cost by role")
@@ -236,8 +259,27 @@ with tab_sim:
     if not res:
         st.info(NEED)
     else:
-        st.subheader("Similar past projects")
+        st.subheader("From the research dataset")
+        st.caption("Real past projects of about the same size.")
         st.dataframe(get_similar(res["size"], res["unit"]))
+
+        st.subheader("From your saved estimates")
+        past = list_estimates()
+        if not past.empty:
+            past = past[past["unit"] == res["unit"]].copy()
+            if not past.empty:
+                latest = past["id"].max()          # the estimate just saved
+                is_same = (past["id"] == latest) & (past["size"] == res["size"]) & (past["team"] == res["team"])
+                past = past[~is_same]
+        if past.empty:
+            st.info("No earlier estimates of this kind yet. They will appear here as you save more.")
+        else:
+            past["gap"] = (np.log(past["size"]) - np.log(res["size"])).abs()
+            close = past.sort_values("gap").head(5)
+            cols = ["id", "created", "domain", "size", "team", "best_guess", "p50", "actual_cost"]
+            st.caption("Estimates you made before, closest in size first. "
+                       "If a real cost was recorded, it shows in actual_cost.")
+            st.dataframe(close[[c for c in cols if c in close.columns]])
 
 # History----
 with tab_hist:
@@ -252,6 +294,17 @@ with tab_hist:
         if st.button("Save actual cost"):
             set_actual(int(pick), float(actual))
             st.rerun()
+            st.markdown("**Delete a saved estimate**")
+
+        def _delete():
+            delete_estimate(int(st.session_state["del_id"]))
+            st.session_state["del_sure"] = False
+
+        d1, d2 = st.columns(2)
+        d1.selectbox("Estimate to delete", hist["id"].tolist(), key="del_id")
+        d2.checkbox("Yes, delete it permanently", key="del_sure")
+        st.button("Delete estimate", disabled=not st.session_state.get("del_sure", False),
+                  on_click=_delete)
     k = kpis()
     if k:
         st.markdown("**Accuracy so far**")

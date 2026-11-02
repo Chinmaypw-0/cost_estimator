@@ -56,30 +56,31 @@ def _doc_part(name, data):
 
 def decompose(description, doc=None, tries=4):
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+    models = [os.getenv("GEMINI_MODEL", "gemini-3.8-flash")]
+    fallback = os.getenv("GEMINI_FALLBACK_MODEL")
+    if fallback:
+        models.append(fallback)
+    contents = ([PROMPT + "\n\nProject description:\n"
+                 + (description.strip() or "(none, see the attached document)")]
+                + ([_doc_part(*doc)] if doc else []))
     last = None
-    for attempt in range(tries):
-        try:
-            r = client.models.generate_content(
-                model=model,
-                contents=[PROMPT + "\n\nProject description:\n"
-                    +(description.strip() or "(none, see the attached document)")]
-                    +([_doc_part(*doc)] if doc else []),
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json", temperature=0),
-            )
-            return Breakdown.model_validate_json(r.text)
-        except errors.ClientError:
-            raise                          # quota, bad key, wrong model: show it now
-        except errors.ServerError as e:    # Google is busy (503): wait, then retry
-            last = e
-            if attempt < tries - 1:
-                time.sleep(3 * 2 ** attempt)
-        except Exception as e:             # malformed JSON: try again right away
-            last = e
+    for model in models:
+        for attempt in range(tries):
+            try:
+                r = client.models.generate_content(
+                    model=model, contents=contents,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json", temperature=0))
+                return Breakdown.model_validate_json(r.text)
+            except errors.ClientError as e:
+                if getattr(e, "code", None) == 429:
+                    last = e
+                    break              # this model's free limit is used up, try the next one
+                raise
+            except errors.ServerError as e:
+                last = e
+                if attempt < tries - 1:
+                    time.sleep(3 * 2 ** attempt)
+            except Exception as e:
+                last = e
     raise last
-
-if __name__ == "__main__":
-    text = ("An inventory management web app for a small shop with login, product "
-            "add/edit/delete, stock alerts, sales reports and a mobile-friendly design.")
-    print(decompose(text).model_dump_json(indent=2))
